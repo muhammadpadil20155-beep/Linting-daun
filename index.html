@@ -561,7 +561,7 @@ async function bypass(inp, out, mode){
       await new Promise(x => setTimeout(x, 1500));
     }
     if(!j){ throw new Error(r.status === 404 ? "file api/bypass.js belum ikut ter-deploy di Vercel (harus ada di folder api/)" : r.status === 504 ? "waktu server habis, naikkan maxDuration di vercel.json" : "balasan server tidak valid (HTTP " + r.status + ")"); }
-    if(!j.ok){ show(out, (j.captcha ? "Perlu verifikasi manual: " : "Bypass gagal: ") + (j.error || "Hasil kosong"), true); if(j.captcha) addLinks(out, [{url: u, text: "Buka tautan asli di browser"}], "Selesaikan verifikasinya sendiri:"); addLinks(out, j.links, "Tautan yang mungkin tujuanmu:"); return; }
+    if(!j.ok){ if(!j.captcha){ let h = ""; try{ h = new URL(u).hostname; }catch(e){} logErr("bypass-" + mode, h + ": " + (j.error || "kosong")); } show(out, (j.captcha ? "Perlu verifikasi manual: " : "Bypass gagal: ") + (j.error || "Hasil kosong"), true); if(j.captcha) addLinks(out, [{url: u, text: "Buka tautan asli di browser"}], "Selesaikan verifikasinya sendiri:"); addLinks(out, j.links, "Tautan yang mungkin tujuanmu:"); return; }
     show(out, j.result, false, true);
     addLinks(out, j.links, "Tautan lain di halaman:");
   }catch(e){ show(out, "Bypass gagal: " + (e.name === "AbortError" ? "waktu habis" : e.message), true); }
@@ -772,7 +772,8 @@ const UPDATES = [
     "Bypass Link lebih tahan terhadap halaman perantara dan menampilkan tautan kandidat saat gagal",
     "Bypass mengenali halaman captcha dan berhenti lebih cepat, serta otomatis mengulang sekali jika error jaringan atau waktu habis",
     "Tombol Copy kini berfungsi di semua browser, Base64 mendukung teks besar",
-    "Pesan error upload dan rating lebih jelas"]},
+    "Pesan error upload dan rating lebih jelas",
+    "Error di web tercatat otomatis supaya cepat diperbaiki"]},
   {v: "1.2", d: "17 Okt 2026", t: "Menu baru, Rating, dan navigasi lebih besar", i: [
     "Menu titik tiga di kanan atas: akses cepat ke semua halaman dan fitur",
     "Fitur Rating dan ulasan: nilai Secretly dan baca ulasan pengunjung lain",
@@ -866,6 +867,15 @@ async function sendRating(){
   }catch(e){ show("r-out", "Gagal mengirim: " + e.message, true); }
   finally{ btn.disabled = false; }
 }
+
+/* Catat error otomatis ke Supabase (tabel error_logs, hanya bisa ditulis, dibaca lewat dashboard Supabase) */
+let LOGGED = 0;
+function logErr(src, msg){
+  if(!SB_READY || LOGGED >= 5) return; LOGGED++;
+  try{ sbPost("error_logs", {source: String(src).slice(0, 40), message: String(msg).slice(0, 300), ua: navigator.userAgent.slice(0, 120)}).catch(() => {}); }catch(e){}
+}
+window.addEventListener("error", e => logErr("js", e.message));
+window.addEventListener("unhandledrejection", e => logErr("promise", (e.reason && e.reason.message) || e.reason));
 
 /* Mulai */
 (async () => { await migrateLocal(); await loadShared(); })();
