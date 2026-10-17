@@ -6,7 +6,7 @@
 const dns = require("dns").promises;
 const net = require("net");
 
-const VERSION = "v5-strict-file-only";
+const VERSION = "v6-fix-skiplink";
 const UA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
 const MAX_HOPS = 8;
 const MAX_BYTES = 2000000;
@@ -220,7 +220,7 @@ async function browserResolve(start, ms, state) {
     page.on("request", async rq => {
       try {
         const type = rq.resourceType(), u = rq.url();
-        if (["image", "font", "media", "stylesheet"].includes(type)) return rq.abort();
+        if (["image", "font", "media"].includes(type)) return rq.abort();
         if (!/^https?:/i.test(u)) return rq.continue();
         const host = new URL(u).hostname;
         if (!okHost.has(host)) { try { await assertPublic(u); okHost.set(host, true); } catch (e) { okHost.set(host, false); } }
@@ -239,6 +239,7 @@ async function browserResolve(start, ms, state) {
         cfSince = cfSince || Date.now();
         if (Date.now() - cfSince > 10000) throw new Error("Situs memakai verifikasi bot Cloudflare, tidak bisa dilewati otomatis");
       } else cfSince = 0;
+      state.html = html; state.cur = cur;
       const n = findNext(html, cur);
       if (n && FILE_HOST.test(n)) { found = n; break; }
       await page.evaluate(() => window.scrollBy(0, 1200)).catch(() => {});
@@ -254,12 +255,16 @@ async function browserResolve(start, ms, state) {
           const r = el.getBoundingClientRect(), st = getComputedStyle(el);
           if (el.disabled || r.width < 5 || r.height < 5 || st.visibility === "hidden" || st.display === "none") continue;
           if (bad.test(t) || bad.test(href) || /sponsored|nofollow/.test(el.rel || "")) continue;
+          if (href.trim().charAt(0) === "#" || /^javascript:\s*(void|;)?/i.test(href) && !/get-?link|unlock|continue|download/i.test(meta + t)) continue;
+          if (/skip to|skip-to|lewati ke|langsung ke|ke konten|to content/i.test(t) || /skip-link|screen-reader|sr-only|visually-hidden/i.test(meta)) continue;
+          if (el.closest("nav,header,footer")) continue;
+          if (el.dataset && Date.now() - Number(el.dataset.sxc || 0) < 8000) continue;
           let sc = 0;
           if (rx.test(t)) sc += 2;
           if (idrx.test(meta)) sc += 3;
           if (sc > bestScore) { bestScore = sc; best = el; }
         }
-        if (best) { if (best.tagName === "A") best.target = "_self"; best.click(); }
+        if (best) { if (best.tagName === "A") best.target = "_self"; best.dataset.sxc = String(Date.now()); best.click(); }
       }, CLICK_RE).catch(() => {});
     }
     try { state.last = page.url(); } catch (e) {}
@@ -313,8 +318,10 @@ module.exports = async (req, res) => {
       }
     }
     if (st.last) berr += " Berhenti di halaman: " + st.last;
+    let cand = [];
+    try { if (st.html) cand = anchors(st.html, st.cur || target).filter(a => a.score > 0).slice(0, 8); } catch (e) {}
     return send(200, {
-      ok: false,
+      ok: false, links: cand,
       error: "Tujuan tidak ditemukan. Situs ini kemungkinan memakai captcha atau verifikasi yang tidak bisa dilewati otomatis." + berr
     });
   } catch (e) {
