@@ -6,6 +6,7 @@
 const dns = require("dns").promises;
 const net = require("net");
 
+const VERSION = "v5-strict-file-only";
 const UA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
 const MAX_HOPS = 8;
 const MAX_BYTES = 2000000;
@@ -240,7 +241,7 @@ async function browserResolve(start, ms, state) {
       } else cfSince = 0;
       const n = findNext(html, cur);
       if (n && FILE_HOST.test(n)) { found = n; break; }
-      await page.evaluate(() => window.scrollBy(0, 700)).catch(() => {});
+      await page.evaluate(() => window.scrollBy(0, 1200)).catch(() => {});
       await page.evaluate(re => {
         const rx = new RegExp(re, "i");
         const idrx = /get-?link|go-?link|btn-?main|safelink|tp-?btn|unlock|continue|download|lanjut|next/i;
@@ -270,7 +271,7 @@ async function browserResolve(start, ms, state) {
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Content-Type", "application/json; charset=utf-8");
-  const send = (code, obj) => res.status(code).send(JSON.stringify(obj));
+  const send = (code, obj) => res.status(code).send(JSON.stringify({ ...obj, v: VERSION }));
   try {
     const q = req.query || {};
     if (q.check === "1") { // cek kesehatan: /api/bypass?check=1
