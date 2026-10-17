@@ -6,7 +6,7 @@
 const dns = require("dns").promises;
 const net = require("net");
 
-const VERSION = "v6-fix-skiplink";
+const VERSION = "v7-captcha-aware";
 const UA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
 const MAX_HOPS = 8;
 const MAX_BYTES = 2000000;
@@ -61,6 +61,7 @@ function paramTarget(href) {
   }
   return null;
 }
+const dec = t => t.replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n));
 function anchors(html, base) {
   const out = [], seen = new Set();
   for (const m of html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)) {
@@ -71,7 +72,7 @@ function anchors(html, base) {
     const url = abs(href, base);
     if (!url || BAD_HOST.test(url) || seen.has(url)) continue;
     seen.add(url);
-    const text = m[2].replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+    const text = dec(m[2].replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim().slice(0, 80);
     const meta = (attrs.match(/\b(?:id|class)=["'][^"']*["']/gi) || []).join(" ");
     let score = 0;
     if (/\bid=["']download["']/i.test(attrs)) score += 10;
@@ -198,6 +199,8 @@ async function loadBrowser() {
     return true;
   } catch (e) { loadErr = e.message; return false; }
 }
+const CAPTCHA_RE = /cf-turnstile|challenges\.cloudflare\.com|cf-chl|challenge-platform|Just a moment|g-recaptcha|h-captcha|hcaptcha|bicocaptcha|verifikasi bahwa anda adalah manusia|verifikasi manusia|confirm you are human|verify you are human|i.?m not a robot|i.?m a human/i;
+const CAPTCHA_MSG = "Situs ini meminta verifikasi manusia (captcha). Verifikasi itu harus kamu selesaikan sendiri di browser, tool tidak bisa menyelesaikannya.";
 const FILE_HOST = /mediafire\.com|drive\.google\.com|mega\.nz|dropbox\.com|gofile\.io|pixeldrain|sfile\.|anonfiles|github\.com|\.(zip|rar|7z|apk|lua|mp4|txt)(\?|#|$)/i;
 const CLICK_RE = "get\\s*link|getlink|continue|lanjut|unlock|download|dapatkan|skip|go\\s*to|proceed|next|selanjutnya|click\\s*here|generate|buat\\s*link|open\\s*link";
 
@@ -235,9 +238,9 @@ async function browserResolve(start, ms, state) {
       const cur = page.url();
       if (cur && new URL(cur).hostname !== startHost && FILE_HOST.test(cur)) { found = cur; break; }
       let html = ""; try { html = await page.content(); } catch (e) { continue; }
-      if (/cf-chl|Just a moment|challenge-platform|cf-turnstile|Attention Required/i.test(html)) {
+      if (CAPTCHA_RE.test(html) || /Attention Required/i.test(html)) {
         cfSince = cfSince || Date.now();
-        if (Date.now() - cfSince > 10000) throw new Error("Situs memakai verifikasi bot Cloudflare, tidak bisa dilewati otomatis");
+        if (Date.now() - cfSince > 6000) throw Object.assign(new Error(CAPTCHA_MSG), { captcha: true });
       } else cfSince = 0;
       state.html = html; state.cur = cur;
       const n = findNext(html, cur);
@@ -308,24 +311,25 @@ module.exports = async (req, res) => {
       return send(200, { ok: true, result: r.url, kind: r.kind, trail: r.trail, links });
     }
     // Cara biasa belum sampai file: coba mode browser
-    let berr = ""; const st = {};
+    let berr = "", captcha = false; const st = {};
     if (process.env.SECRETLY_BROWSER !== "0") {
       try {
         const u = await browserResolve(target, 42000, st);
         if (u) return send(200, { ok: true, result: u, kind: "browser" });
       } catch (e) {
-        berr = " (mode browser: " + e.message + (/libnss|shared librar/i.test(e.message) ? ". Periksa vercel.json includeFiles dan Node 24" : "") + ")";
+        if (e.captcha) captcha = true;
+        else berr = " (mode browser: " + e.message + (/libnss|shared librar/i.test(e.message) ? ". Periksa vercel.json includeFiles dan Node 24" : "") + ")";
       }
     }
     if (st.last) berr += " Berhenti di halaman: " + st.last;
     let cand = [];
-    try { if (st.html) cand = anchors(st.html, st.cur || target).filter(a => a.score > 0).slice(0, 8); } catch (e) {}
+    try { if (st.html) { const h0 = new URL(st.cur || target).hostname; cand = anchors(st.html, st.cur || target).filter(a => a.score > 0 && (new URL(a.url).hostname !== h0 || FILE_HOST.test(a.url))).slice(0, 6); } } catch (e) {}
     return send(200, {
-      ok: false, links: cand,
-      error: "Tujuan tidak ditemukan. Situs ini kemungkinan memakai captcha atau verifikasi yang tidak bisa dilewati otomatis." + berr
+      ok: false, links: cand, captcha, retryable: !captcha,
+      error: captcha ? CAPTCHA_MSG + (st.last ? " Halaman terakhir: " + st.last : "") : "Tujuan tidak ditemukan. Halaman memakai langkah yang belum bisa dikenali." + berr
     });
   } catch (e) {
-    return send(200, { ok: false, error: e.message || "Terjadi kesalahan" });
+    return send(200, { ok: false, retryable: /Waktu habis|Tidak bisa membuka/.test(e.message || ""), error: e.message || "Terjadi kesalahan" });
   }
 };
 
