@@ -2,9 +2,9 @@
   "name": "secretly",
   "version": "1.0.0",
   "private": true,
-  "engines": { "node": "20.x" },
+  "engines": { "node": "24.x" },
   "dependencies": {
-    "@sparticuz/chromium": "^131.0.1",
-    "puppeteer-core": "^23.10.4"
+    "@sparticuz/chromium": ">=138.0.0",
+    "puppeteer-core": "^24.0.0"
   }
 }
