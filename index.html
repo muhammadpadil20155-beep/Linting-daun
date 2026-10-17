@@ -119,6 +119,31 @@ details.card{margin-bottom:10px;padding:14px 16px}
 details summary{cursor:pointer;font:700 .98rem Outfit;list-style:none}
 details summary::-webkit-details-marker{display:none}
 details p{color:var(--mut);line-height:1.6;margin-top:10px;font-size:.9rem}
+
+/* ===== v1.7: tools jadi kartu besar 2 kolom; pilih kartu untuk membuka tool ===== */
+#tabs.tabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;overflow:visible;padding:4px 0 14px}
+#tabs .btn{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:0;text-align:left;aspect-ratio:1/1;width:auto;height:auto;padding:14px;border-radius:22px;overflow:hidden;white-space:normal;font-size:1rem}
+#tabs .btn::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:var(--ac)}
+#tabs .tk{position:absolute;left:14px;top:20px;width:48px;height:48px;border-radius:15px;background:var(--ac);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px #0006}
+#tabs .tk .i{width:26px;height:26px;color:#fff}
+#tabs .bd{position:absolute;right:12px;top:20px;font-size:.6rem;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.3);opacity:.85}
+#tabs .nm{font-weight:800;font-size:1.02rem;line-height:1.15}
+#tabs .cs{font-size:.74rem;font-weight:500;opacity:.65;line-height:1.25;margin-top:3px}
+#tools-back{display:none;margin:2px 0 12px}
+#tools:not(.pick) #tools-back{display:inline-flex}
+#tools:not(.pick) #tabs{display:none}
+#tools.pick .tool{display:none!important}
+/* ===== Chat AI dan Katalog Anime ===== */
+#c-log{max-height:52vh;overflow-y:auto;margin-bottom:8px}
+.cmsg{padding:10px 12px;border-radius:14px;margin:8px 0;line-height:1.5;font-size:.9rem;word-break:break-word}
+.cmsg.u{background:rgba(255,61,129,.22);margin-left:28px}.cmsg.a{background:rgba(255,255,255,.07);margin-right:8px}
+.cb{margin:8px 0}.cb pre{max-height:240px;overflow:auto;background:#0009;padding:10px;border-radius:12px;font:12px/1.4 ui-monospace,monospace;white-space:pre}
+.cb .row{margin-top:6px;flex-wrap:wrap}.cb .btn{padding:6px 10px;font-size:.78rem}
+.cprev{position:fixed;inset:0;z-index:60;background:#000c;display:flex;flex-direction:column}.cprev iframe{flex:1;border:0;background:#fff}.cprev .btn{margin:8px}
+.ac{display:flex;gap:10px;padding:10px;margin:8px 0;border-radius:16px;background:rgba(255,255,255,.06);cursor:pointer}
+.ac img{width:64px;height:90px;object-fit:cover;border-radius:10px;flex:none;background:#0006}
+.ac b{display:block;line-height:1.25}.ac small{display:block;opacity:.7;margin-top:3px}.nw{color:#ffd166;opacity:1!important;font-weight:700}
+#a-detail .btn{margin:4px 4px 4px 0;text-decoration:none}#a-detail h3{margin:10px 0 4px}#a-detail p{opacity:.8;font-size:.86rem;line-height:1.5}
 </style>
 </head>
 <body>
@@ -148,6 +173,7 @@ details p{color:var(--mut);line-height:1.6;margin-top:10px;font-size:.9rem}
 <symbol id="cart" viewBox="0 0 24 24"><path d="M3 4h3l2.500 11h10L21 7H7"/><circle cx="9" cy="20" r="1.500"/><circle cx="18" cy="20" r="1.500"/></symbol>
 <symbol id="key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></symbol>
 <symbol id="braces" viewBox="0 0 24 24"><path d="M8 4c-3 0-3 2-3 4s0 3-2 4c2 1 2 2 2 4s0 4 3 4M16 4c3 0 3 2 3 4s0 3 2 4c-2 1-2 2-2 4s0 4-3 4"/></symbol>
+<symbol id="rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-4A13 13 0 0 1 22 2c0 2.7-.8 7.5-6 11a22 22 0 0 1-4 2z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/></symbol>
 <symbol id="hash" viewBox="0 0 24 24"><path d="M5 9h15M4 15h15M10 3L8 21M16 3l-2 18"/></symbol>
 <symbol id="plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
 <symbol id="dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></symbol>
@@ -203,19 +229,24 @@ details p{color:var(--mut);line-height:1.6;margin-top:10px;font-size:.9rem}
 </section>
 
 <!-- TOOLS -->
-<section class="page" id="tools">
+<section class="page pick" id="tools">
   <div class="tabs" id="tabs">
-    <button class="btn on" data-t="t-bypass"><svg class="i"><use href="#link"/></svg>Bypass Link</button>
-    <button class="btn" data-t="t-web"><svg class="i"><use href="#globe"/></svg>Bypass Web</button>
-    <button class="btn" data-t="t-obf"><svg class="i"><use href="#code"/></svg>Obfuscate</button>
-    <button class="btn" data-t="t-vid"><svg class="i"><use href="#video"/></svg>Video ke Link</button>
-    <button class="btn" data-t="t-img"><svg class="i"><use href="#img"/></svg>Foto ke Link</button>
-    <button class="btn" data-t="t-b64"><svg class="i"><use href="#lock"/></svg>Base64</button>
-    <button class="btn" data-t="t-json"><svg class="i"><use href="#braces"/></svg>JSON</button>
-    <button class="btn" data-t="t-pw"><svg class="i"><use href="#key"/></svg>Password</button>
-    <button class="btn" data-t="t-sha"><svg class="i"><use href="#hash"/></svg>SHA-256</button>
-    <button class="btn" data-t="t-url"><svg class="i"><use href="#link"/></svg>URL Encode</button>
+    <button class="btn" data-t="t-bypass" style="--ac:#ff3d81"><span class="tk"><svg class="i"><use href="#link"/></svg></span><span class="bd">LINK</span><span class="nm">Bypass Link</span><span class="cs">bicolink, sfile, sfl.gl</span></button>
+    <button class="btn" data-t="t-web" style="--ac:#f5a524"><span class="tk"><svg class="i"><use href="#globe"/></svg></span><span class="bd">WEB</span><span class="nm">Bypass Web</span><span class="cs">timer dan pengalihan</span></button>
+    <button class="btn" data-t="t-obf" style="--ac:#8b5cf6"><span class="tk"><svg class="i"><use href="#code"/></svg></span><span class="bd">LUA</span><span class="nm">Obfuscate</span><span class="cs">ubah Lua jadi loader</span></button>
+    <button class="btn" data-t="t-vid" style="--ac:#22b8cf"><span class="tk"><svg class="i"><use href="#video"/></svg></span><span class="bd">UPLOAD</span><span class="nm">Video ke Link</span><span class="cs">unggah video, dapat tautan</span></button>
+    <button class="btn" data-t="t-img" style="--ac:#2fbf71"><span class="tk"><svg class="i"><use href="#img"/></svg></span><span class="bd">UPLOAD</span><span class="nm">Foto ke Link</span><span class="cs">unggah foto, dapat tautan</span></button>
+    <button class="btn" data-t="t-b64" style="--ac:#ff7a45"><span class="tk"><svg class="i"><use href="#lock"/></svg></span><span class="bd">TEKS</span><span class="nm">Base64</span><span class="cs">encode dan decode</span></button>
+    <button class="btn" data-t="t-json" style="--ac:#4c8dff"><span class="tk"><svg class="i"><use href="#braces"/></svg></span><span class="bd">DEV</span><span class="nm">JSON</span><span class="cs">rapikan dan minify</span></button>
+    <button class="btn" data-t="t-pw" style="--ac:#e05bd0"><span class="tk"><svg class="i"><use href="#key"/></svg></span><span class="bd">ACAK</span><span class="nm">Password</span><span class="cs">generator password</span></button>
+    <button class="btn" data-t="t-sha" style="--ac:#d6b400"><span class="tk"><svg class="i"><use href="#hash"/></svg></span><span class="bd">HASH</span><span class="nm">SHA-256</span><span class="cs">buat hash teks</span></button>
+    <button class="btn" data-t="t-url" style="--ac:#34c4a2"><span class="tk"><svg class="i"><use href="#link"/></svg></span><span class="bd">TEKS</span><span class="nm">URL Encode</span><span class="cs">encode dan decode</span></button>
+    <button class="btn" data-t="t-deploy" style="--ac:#8a97ad"><span class="tk"><svg class="i"><use href="#rocket"/></svg></span><span class="bd">DEPLOY</span><span class="nm">Deploy Vercel</span><span class="cs">HTML ke domain vercel.app</span></button>
+    <button class="btn" data-t="t-chat" style="--ac:#7c5cff"><span class="tk"><svg class="i"><use href="#braces"/></svg></span><span class="bd">AI</span><span class="nm">Chat AI</span><span class="cs">buat website dan kode</span></button>
+    <button class="btn" data-t="t-anime" style="--ac:#ff6b6b"><span class="tk"><svg class="i"><use href="#video"/></svg></span><span class="bd">ANIME</span><span class="nm">Katalog Anime</span><span class="cs">jadwal dan episode baru</span></button>
   </div>
+
+  <button class="btn" id="tools-back" type="button">&lsaquo; Semua tools</button>
 
   <div class="card glass tool on" id="t-bypass">
     <h2><svg class="i"><use href="#link"/></svg>Bypass Link</h2>
@@ -291,6 +322,35 @@ details p{color:var(--mut);line-height:1.6;margin-top:10px;font-size:.9rem}
     <textarea id="h-in" placeholder="Teks yang mau di-hash"></textarea>
     <button class="btn go" style="width:100%" onclick="sha()"><svg class="i"><use href="#hash"/></svg>Buat hash</button>
     <div class="out" id="h-out"></div>
+  </div>
+
+  <div class="card glass tool" id="t-deploy" hidden>
+    <h2><svg class="i"><use href="#rocket"/></svg>Deploy Vercel</h2>
+    <p class="d">Unggah file HTML (boleh ZIP) atau tempel kodenya. Repo GitHub dibuat otomatis dengan nama pilihanmu, lalu website langsung online di domain vercel.app.</p>
+    <div class="row"><input type="text" id="d-name" placeholder="nama-website (huruf kecil, angka, -)" autocomplete="off" style="flex:2"><button class="btn" id="d-check" type="button">Cek nama</button></div>
+    <div class="d" id="d-state" style="margin:8px 0"></div>
+    <input type="file" id="d-files" multiple accept=".html,.htm,.css,.js,.json,.txt,.svg,.png,.jpg,.jpeg,.gif,.webp,.ico,.zip,.py">
+    <textarea id="d-code" placeholder="atau tempel kode HTML di sini"></textarea>
+    <button class="btn go" id="d-go" type="button" style="width:100%"><svg class="i"><use href="#rocket"/></svg>Deploy sekarang</button>
+    <div class="out" id="d-out"></div>
+    <p class="d" style="margin-top:10px">Batas sekitar 3 MB dan 60 file per deploy. Aktivitas deploy dicatat otomatis.</p>
+  </div>
+
+  <div class="card glass tool" id="t-chat" hidden>
+    <h2><svg class="i"><use href="#braces"/></svg>Chat AI</h2>
+    <p class="d">Tanya apa saja atau minta dibuatkan website (HTML). Hasilnya bisa di-preview lalu dikirim ke Deploy Vercel. Ada batas pesan harian.</p>
+    <div id="c-log"></div>
+    <textarea id="c-in" placeholder="Contoh: buatkan landing page toko modpack, tema gelap"></textarea>
+    <button class="btn go" id="c-send" type="button" style="width:100%">Kirim</button>
+  </div>
+
+  <div class="card glass tool" id="t-anime" hidden>
+    <h2><svg class="i"><use href="#video"/></svg>Katalog Anime</h2>
+    <p class="d">Jadwal tayang dan episode terbaru dari AniList. Tombol tonton mengarah ke platform resmi. Tandai Pantau agar episode baru muncul otomatis di sini.</p>
+    <div class="row"><input type="text" id="a-q" placeholder="Cari anime (mis. Tokyo Revengers)" autocomplete="off" style="flex:2"><button class="btn" id="a-go" type="button">Cari</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="a-air" type="button">Sedang tayang</button><button class="btn" id="a-fav" type="button">Pantauanku</button></div>
+    <div id="a-list" style="margin-top:6px"></div>
+    <div id="a-detail" hidden></div>
   </div>
 </section>
 
@@ -518,19 +578,22 @@ const show = (id, txt, err, link) => {
 };
 
 /* Navigasi halaman */
+const TOOLSPG = document.querySelector("section#tools"); /* id "tools" juga dipakai simbol SVG, jadi dipilih lewat section */
 function go(id){
   document.querySelectorAll(".page").forEach(p => p.classList.toggle("on", p.id === id));
   document.querySelectorAll("nav [data-page]").forEach(n => n.classList.toggle("on", n.dataset.page === id));
   scrollTo({top: 0});
+  if(id === "tools") TOOLSPG.classList.add("pick");
   if(id === "rating") loadRatings();
   if(id === "updates") markSeen();
 }
 document.querySelectorAll("[data-page]").forEach(b => b.onclick = () => go(b.dataset.page));
 /* Tab tools */
 document.querySelectorAll("#tabs [data-t]").forEach(b => b.onclick = () => {
-  document.querySelectorAll("#tabs .btn").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll(".tool").forEach(t => t.hidden = t.id !== b.dataset.t);
+  TOOLSPG.classList.remove("pick"); scrollTo({top: 0});
 });
+$("tools-back").onclick = () => { TOOLSPG.classList.add("pick"); scrollTo({top: 0}); };
 
 async function paste(id){ try{ $(id).value = await navigator.clipboard.readText(); }catch(e){ $(id).focus(); } }
 
@@ -561,7 +624,8 @@ async function bypass(inp, out, mode){
       await new Promise(x => setTimeout(x, 1500));
     }
     if(!j){ throw new Error(r.status === 404 ? "file api/bypass.js belum ikut ter-deploy di Vercel (harus ada di folder api/)" : r.status === 504 ? "waktu server habis, naikkan maxDuration di vercel.json" : "balasan server tidak valid (HTTP " + r.status + ")"); }
-    if(!j.ok){ if(!j.captcha){ let h = ""; try{ h = new URL(u).hostname; }catch(e){} logErr("bypass-" + mode, h + ": " + (j.error || "kosong")); } show(out, (j.captcha ? "Perlu verifikasi manual: " : "Bypass gagal: ") + (j.error || "Hasil kosong"), true); if(j.captcha) addLinks(out, [{url: u, text: "Buka tautan asli di browser"}], "Selesaikan verifikasinya sendiri:"); addLinks(out, j.links, "Tautan yang mungkin tujuanmu:"); return; }
+    try{ logEvent("bypass", new URL(u).hostname + " " + (j.ok ? "ok" : j.captcha ? "captcha" : "gagal")); }catch(e){}
+    if(!j.ok){ if(!j.captcha){ let h = ""; try{ h = new URL(u).hostname; }catch(e){} logErr("bypass-" + mode, h + ": " + (j.error || "kosong")); } show(out, ((j.captcha || j.manual) ? "Perlu langkah manual: " : "Bypass gagal: ") + (j.error || "Hasil kosong"), true); if(j.captcha || j.manual) addLinks(out, [{url: u, text: "Buka tautan asli di browser"}], "Selesaikan verifikasinya sendiri:"); addLinks(out, j.links, "Tautan yang mungkin tujuanmu:"); return; }
     show(out, j.result, false, true);
     addLinks(out, j.links, "Tautan lain di halaman:");
   }catch(e){ show(out, "Bypass gagal: " + (e.name === "AbortError" ? "waktu habis" : e.message), true); }
@@ -773,7 +837,9 @@ const UPDATES = [
     "Bypass mengenali halaman captcha dan berhenti lebih cepat, serta otomatis mengulang sekali jika error jaringan atau waktu habis",
     "Tombol Copy kini berfungsi di semua browser, Base64 mendukung teks besar",
     "Pesan error upload dan rating lebih jelas",
-    "Error di web tercatat otomatis supaya cepat diperbaiki"]},
+    "Error di web tercatat otomatis supaya cepat diperbaiki",
+    "Tool baru: Deploy Vercel. Buat repo GitHub dan website vercel.app langsung dari sini",
+    "Tool baru: Chat AI untuk membuat website dan kode, serta Katalog Anime dengan jadwal dan episode terbaru"]},
   {v: "1.2", d: "17 Okt 2026", t: "Menu baru, Rating, dan navigasi lebih besar", i: [
     "Menu titik tiga di kanan atas: akses cepat ke semua halaman dan fitur",
     "Fitur Rating dan ulasan: nilai Secretly dan baca ulasan pengunjung lain",
@@ -868,14 +934,150 @@ async function sendRating(){
   finally{ btn.disabled = false; }
 }
 
-/* Catat error otomatis ke Supabase (tabel error_logs, hanya bisa ditulis, dibaca lewat dashboard Supabase) */
-let LOGGED = 0;
-function logErr(src, msg){
-  if(!SB_READY || LOGGED >= 5) return; LOGGED++;
-  try{ sbPost("error_logs", {source: String(src).slice(0, 40), message: String(msg).slice(0, 300), ua: navigator.userAgent.slice(0, 120)}).catch(() => {}); }catch(e){}
+/* Catat error dan aktivitas ke file log di GitHub lewat /api/log */
+let LOGGED = 0, EVN = 0;
+function logEvent(ev, msg, isErr){
+  if(isErr ? LOGGED >= 5 : EVN >= 30) return; isErr ? LOGGED++ : EVN++;
+  try{ fetch("/api/log", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ev, msg: String(msg).slice(0, 300)}), keepalive: true}).catch(() => {}); }catch(e){}
 }
+function logErr(src, msg){ logEvent("err_" + String(src).replace(/[^a-z]/gi, "_"), msg, true); }
 window.addEventListener("error", e => logErr("js", e.message));
 window.addEventListener("unhandledrejection", e => logErr("promise", (e.reason && e.reason.message) || e.reason));
+
+/* Deploy Vercel */
+function loadZip(){ return window.JSZip ? Promise.resolve() : new Promise((ok, no) => { const x = document.createElement("script"); x.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"; x.onload = ok; x.onerror = () => no(new Error("Gagal memuat pembuka ZIP")); document.head.appendChild(x); }); }
+async function dFiles(){
+  const out = [], add = (p, u8) => out.push({path: p.replace(/^(\.?\/)+/, ""), b64: btoa(bin(u8))});
+  for(const f of $("d-files").files){
+    if(/\.zip$/i.test(f.name)){ await loadZip(); const z = await JSZip.loadAsync(f); for(const [p, e] of Object.entries(z.files)){ if(e.dir || /(^|\/)(__MACOSX|\.DS_Store)/.test(p)) continue; add(p, await e.async("uint8array")); } }
+    else add(f.name, new Uint8Array(await f.arrayBuffer()));
+  }
+  const code = $("d-code").value.trim(); if(code) add("index.html", new TextEncoder().encode(code));
+  if(out.length > 1 && out.every(f => f.path.includes("/")) && new Set(out.map(f => f.path.split("/")[0])).size === 1) out.forEach(f => f.path = f.path.split("/").slice(1).join("/"));
+  return out;
+}
+async function dCheck(){
+  const st = $("d-state"), n = $("d-name").value.trim(); if(!n){ st.textContent = "Isi nama dulu"; return false; }
+  st.textContent = "Mengecek nama...";
+  try{ const j = await (await fetch("/api/deploy?name=" + encodeURIComponent(n))).json(); st.textContent = (j.ok ? "Tersedia: " : "") + (j.ok ? j.name : (j.msg || j.error || "Gagal mengecek")); st.style.color = j.ok ? "#9be7b0" : "#ffb3c8"; if(j.name) $("d-name").value = j.name; return !!j.ok; }
+  catch(e){ st.textContent = "Gagal mengecek nama"; st.style.color = "#ffb3c8"; return false; }
+}
+async function dDeploy(){
+  const out = "d-out"; show(out, "Menyiapkan file...");
+  try{
+    const files = await dFiles(); if(!files.length) return show(out, "Pilih file atau tempel kode HTML dulu", true);
+    if(files.reduce((t, f) => t + f.b64.length * .75, 0) > 3.2e6) return show(out, "Total file lebih dari 3 MB, kecilkan dulu", true);
+    show(out, "Membuat repo GitHub lalu deploy ke Vercel... bisa sampai 1 menit, jangan tutup halaman");
+    const r = await fetch("/api/deploy", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name: $("d-name").value, files})});
+    const j = await r.json().catch(() => null);
+    if(!j || !j.ok){ const m = (j && j.error) || ("Server tidak merespons (HTTP " + r.status + ")"); show(out, m, true); if(!j || !j.taken) logErr("deploy", m); return; }
+    show(out, j.url, false, true);
+    if((j.fixes && j.fixes.length) || j.pending){ const n = document.createElement("div"); n.style.cssText = "margin-top:10px;opacity:.75"; n.textContent = (j.fixes && j.fixes.length ? "Diperbaiki otomatis: " + j.fixes.join("; ") + ". " : "") + (j.pending ? "Situs masih diproses, tunggu sebentar lalu buka tautannya." : ""); $(out).appendChild(n); }
+  }catch(e){ show(out, "Deploy gagal: " + e.message, true); logErr("deploy", e.message); }
+}
+$("d-check").onclick = dCheck; $("d-go").onclick = dDeploy; $("d-name").onblur = () => { if($("d-name").value.trim()) dCheck(); };
+
+/* Chat AI (streaming dari /api/chat) */
+const chatHist = [];
+function copyTxt(t, b){ navigator.clipboard.writeText(t).then(() => { b.textContent = "Tersalin"; }).catch(() => { b.textContent = "Gagal"; }); }
+function chatPreview(code){
+  const o = document.createElement("div"); o.className = "cprev";
+  const c = document.createElement("button"); c.className = "btn"; c.type = "button"; c.textContent = "Tutup preview"; c.onclick = () => o.remove();
+  const f = document.createElement("iframe"); f.setAttribute("sandbox", "allow-scripts allow-forms allow-modals"); f.srcdoc = code;
+  o.append(c, f); document.body.appendChild(o);
+}
+function chatRender(el, text, done){
+  el.textContent = "";
+  text.split("```").forEach((p, i) => {
+    if(i % 2 === 0){ if(p.trim()){ const d = document.createElement("div"); d.style.whiteSpace = "pre-wrap"; d.textContent = p.trim(); el.appendChild(d); } return; }
+    const nl = p.indexOf("\n"), lang = (nl > -1 ? p.slice(0, nl) : "").trim().toLowerCase(), code = nl > -1 ? p.slice(nl + 1) : "";
+    const box = document.createElement("div"); box.className = "cb"; const pre = document.createElement("pre"); pre.textContent = code; box.appendChild(pre);
+    if(done){
+      const bar = document.createElement("div"); bar.className = "row";
+      const mk = (n, f) => { const b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = n; b.onclick = () => f(b); bar.appendChild(b); };
+      mk("Salin", b => copyTxt(code, b));
+      if(lang === "html" || /<html|<!doctype/i.test(code)){
+        mk("Preview", () => chatPreview(code));
+        mk("Kirim ke Deploy", () => { $("d-code").value = code; const t = document.querySelector('#tabs [data-t="t-deploy"]'); if(t) t.click(); toast("Kode dikirim ke Deploy Vercel"); });
+      }
+      box.appendChild(bar);
+    }
+    el.appendChild(box);
+  });
+}
+async function chatSend(){
+  const inp = $("c-in"), t = inp.value.trim(); if(!t) return; inp.value = "";
+  const log = $("c-log"), mkm = c => { const d = document.createElement("div"); d.className = "cmsg " + c; log.appendChild(d); return d; };
+  mkm("u").textContent = t; chatHist.push({role: "user", content: t});
+  const el = mkm("a"); el.textContent = "Mengetik..."; $("c-send").disabled = true; let full = "", raf = 0;
+  try{
+    const r = await fetch("/api/chat", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({messages: chatHist.slice(-12)})});
+    if(!r.ok || !r.body){ const j = await r.json().catch(() => null); throw new Error((j && j.error) || "Server tidak merespons (HTTP " + r.status + ")"); }
+    const rd = r.body.getReader(), dc = new TextDecoder();
+    for(;;){ const x = await rd.read(); if(x.done) break; full += dc.decode(x.value, {stream: true}); if(!raf) raf = requestAnimationFrame(() => { raf = 0; chatRender(el, full, false); log.scrollTop = log.scrollHeight; }); }
+    if(raf) cancelAnimationFrame(raf);
+    chatRender(el, full, true); chatHist.push({role: "assistant", content: full});
+  }catch(e){ if(raf) cancelAnimationFrame(raf); el.textContent = "Gagal: " + e.message; chatHist.pop(); logErr("chat", e.message); }
+  $("c-send").disabled = false; log.scrollTop = log.scrollHeight;
+}
+$("c-send").onclick = chatSend;
+
+/* Katalog Anime (AniList). Tombol tonton hanya mengarah ke platform resmi. */
+const AL = "https://graphql.anilist.co", FAVK = "secretly_anime_fav_v1";
+const favs = () => { try{ return JSON.parse(localStorage.getItem(FAVK) || "{}"); }catch(e){ return {}; } };
+const saveFavs = f => { try{ localStorage.setItem(FAVK, JSON.stringify(f)); }catch(e){} };
+const MF = "id title{romaji english} coverImage{large} episodes status nextAiringEpisode{episode timeUntilAiring}";
+const latest = m => m.nextAiringEpisode ? m.nextAiringEpisode.episode - 1 : (m.episodes || 0);
+const eta = s => s >= 86400 ? Math.floor(s / 86400) + " hari lagi" : s >= 3600 ? Math.floor(s / 3600) + " jam lagi" : Math.max(1, Math.floor(s / 60)) + " menit lagi";
+const okUrl = u => /^https?:\/\//i.test(u || "");
+let aMode = "air", aLoaded = false;
+async function al(query, variables){
+  const r = await fetch(AL, {method: "POST", headers: {"Content-Type": "application/json", Accept: "application/json"}, body: JSON.stringify({query, variables})});
+  const j = await r.json().catch(() => null);
+  if(!r.ok || !j || j.errors) throw new Error((j && j.errors && j.errors[0].message) || "AniList HTTP " + r.status);
+  return j.data;
+}
+function mkel(tag, txt, cls){ const e = document.createElement(tag); if(txt) e.textContent = txt; if(cls) e.className = cls; return e; }
+function aCard(m){
+  const f = favs(), c = mkel("div", "", "ac"), img = mkel("img"), d = mkel("div"), l = latest(m);
+  img.src = m.coverImage.large; img.alt = ""; img.loading = "lazy";
+  d.append(mkel("b", m.title.english || m.title.romaji), mkel("small", "Episode terbaru: " + (l || "-") + (m.episodes ? " dari " + m.episodes : "")));
+  if(m.nextAiringEpisode) d.appendChild(mkel("small", "Episode " + m.nextAiringEpisode.episode + " tayang " + eta(m.nextAiringEpisode.timeUntilAiring)));
+  if(f[m.id] && l > (f[m.id].seen || 0)) d.appendChild(mkel("small", "Ada episode baru", "nw"));
+  c.append(img, d); c.onclick = () => aOpen(m.id); return c;
+}
+async function aLoad(mode){
+  aMode = mode; const box = $("a-list"); $("a-detail").hidden = true; box.hidden = false; box.textContent = "Memuat...";
+  try{
+    let data;
+    if(mode === "fav"){ const ids = Object.keys(favs()).map(Number); if(!ids.length){ box.textContent = "Belum ada yang dipantau. Buka sebuah anime lalu tekan Pantau."; return; } data = await al("query($ids:[Int]){Page(perPage:50){media(id_in:$ids,type:ANIME){" + MF + "}}}", {ids}); }
+    else if(mode === "search") data = await al("query($q:String){Page(perPage:20){media(search:$q,type:ANIME,sort:SEARCH_MATCH){" + MF + "}}}", {q: $("a-q").value.trim()});
+    else data = await al("query{Page(perPage:20){media(type:ANIME,status:RELEASING,sort:TRENDING_DESC){" + MF + "}}}", {});
+    const list = data.Page.media; box.textContent = ""; if(!list.length){ box.textContent = "Tidak ada hasil."; return; } list.forEach(m => box.appendChild(aCard(m)));
+  }catch(e){ box.textContent = "Gagal memuat: " + e.message; logErr("anime", e.message); }
+}
+async function aOpen(id){
+  const dt = $("a-detail"); $("a-list").hidden = true; dt.hidden = false; dt.textContent = "Memuat...";
+  try{
+    const m = (await al("query($id:Int){Media(id:$id){" + MF + " season seasonYear description(asHtml:false) streamingEpisodes{title url site} externalLinks{site url type}}}", {id})).Media;
+    const f = favs(), l = latest(m); if(f[id]){ f[id].seen = l; saveFavs(f); }
+    dt.textContent = ""; const back = mkel("button", "\u2039 Kembali", "btn"); back.type = "button"; back.onclick = () => aLoad(aMode);
+    const fav = mkel("button", f[id] ? "Berhenti pantau" : "Pantau", "btn"); fav.type = "button";
+    fav.onclick = () => { const g = favs(); if(g[id]) delete g[id]; else g[id] = {t: m.title.romaji, seen: latest(m)}; saveFavs(g); fav.textContent = g[id] ? "Berhenti pantau" : "Pantau"; };
+    dt.append(back, fav, mkel("h3", m.title.english || m.title.romaji),
+      mkel("small", [m.season && m.seasonYear ? m.season + " " + m.seasonYear : "", m.status, "Episode terbaru: " + (l || "-") + (m.episodes ? " dari " + m.episodes : "")].filter(Boolean).join(" | ")),
+      mkel("p", (m.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 420)));
+    const pl = (m.externalLinks || []).filter(x => x.type === "STREAMING" && okUrl(x.url));
+    dt.appendChild(mkel("h3", pl.length ? "Tonton di platform resmi" : "Belum ada tautan platform resmi"));
+    pl.forEach(x => { const a = mkel("a", x.site, "btn"); a.href = x.url; a.target = "_blank"; a.rel = "noopener noreferrer"; dt.appendChild(a); });
+    const eps = (m.streamingEpisodes || []).filter(x => okUrl(x.url)).reverse().slice(0, 30);
+    if(eps.length){ dt.appendChild(mkel("h3", "Episode")); eps.forEach(x => { const a = mkel("a", x.title + " (" + x.site + ")", "btn"); a.href = x.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.style.display = "block"; dt.appendChild(a); }); }
+  }catch(e){ dt.textContent = "Gagal memuat: " + e.message; logErr("anime", e.message); }
+}
+$("a-go").onclick = () => { if($("a-q").value.trim()) aLoad("search"); };
+$("a-q").onkeydown = e => { if(e.key === "Enter") $("a-go").click(); };
+$("a-air").onclick = () => aLoad("air"); $("a-fav").onclick = () => aLoad("fav");
+document.querySelector('#tabs [data-t="t-anime"]').addEventListener("click", () => { if(!aLoaded){ aLoaded = true; aLoad("air"); } else if(aMode === "fav") aLoad("fav"); });
 
 /* Mulai */
 (async () => { await migrateLocal(); await loadShared(); })();
