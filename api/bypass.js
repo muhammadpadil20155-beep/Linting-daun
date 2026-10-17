@@ -6,7 +6,7 @@
 const dns = require("dns").promises;
 const net = require("net");
 
-const VERSION = "v8-frame-captcha";
+const VERSION = "v9-manual-flag";
 const UA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
 const MAX_HOPS = 8;
 const MAX_BYTES = 2000000;
@@ -326,8 +326,8 @@ module.exports = async (req, res) => {
     let cand = [];
     try { if (st.html) { const h0 = new URL(st.cur || target).hostname; cand = anchors(st.html, st.cur || target).filter(a => a.score > 0 && (new URL(a.url).hostname !== h0 || FILE_HOST.test(a.url))).slice(0, 6); } } catch (e) {}
     return send(200, {
-      ok: false, links: cand, captcha, retryable: !captcha,
-      error: captcha ? CAPTCHA_MSG + (st.last ? " Halaman terakhir: " + st.last : "") : "Tujuan tidak ditemukan. Halaman memakai langkah yang belum bisa dikenali." + berr
+      ok: false, links: cand, captcha, manual: !captcha, retryable: false,
+      error: captcha ? CAPTCHA_MSG + (st.last ? " Halaman terakhir: " + st.last : "") : "Halaman ini memakai langkah interaktif (timer, iklan, atau verifikasi) yang tidak bisa diselesaikan otomatis. Selesaikan sendiri di browser." + berr
     });
   } catch (e) {
     return send(200, { ok: false, retryable: /Waktu habis|Tidak bisa membuka/.test(e.message || ""), error: e.message || "Terjadi kesalahan" });
