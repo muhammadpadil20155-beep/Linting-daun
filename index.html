@@ -408,6 +408,83 @@ details p{color:var(--mut);line-height:1.6;margin-top:10px;font-size:.9rem}
 </nav>
 
 <script>
+/* Gerbang saluran WhatsApp. WhatsApp tidak punya API untuk mengecek follow saluran,
+   jadi "deteksi" = pengguna membuka tautan saluran, kembali, lalu menunggu beberapa detik. Bukan verifikasi mutlak. */
+(function () {
+  var LINK = "https://whatsapp.com/channel/0029VbB7HlkE50UeOumONS2d";
+  var KEY = "secretly_wa_joined_v1", WAIT = 10; // detik minimal setelah kembali dari WhatsApp
+  var ls = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+             set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  if (ls.get(KEY) === "1") return;
+
+  var css = document.createElement("style");
+  css.textContent =
+    "#wag{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;" +
+    "background:rgba(10,4,8,.72);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);font-family:inherit;color:#fff}" +
+    "#wag .c{width:100%;max-width:380px;padding:26px 22px;border-radius:22px;background:rgba(255,255,255,.09);" +
+    "border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 60px rgba(0,0,0,.5)}" +
+    "#wag h2{margin:14px 0 6px;font-size:21px;line-height:1.25}" +
+    "#wag p{margin:0 0 18px;font-size:14px;line-height:1.55;color:rgba(255,255,255,.75)}" +
+    "#wag .ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#b4235a,#6e1235)}" +
+    "#wag button{width:100%;padding:14px;border:1px solid rgba(255,140,170,.45);border-radius:14px;font-weight:600;font-size:15px;font-family:inherit;color:#fff;" +
+    "background:linear-gradient(135deg,rgba(200,40,95,.85),rgba(120,20,55,.85));cursor:pointer}" +
+    "#wag button[disabled]{opacity:.45;cursor:not-allowed}" +
+    "#wag .st{margin-top:14px;font-size:13px;min-height:18px;color:#ffb3c8}" +
+    "#wag .ok{color:#9be7b0}" +
+    "body.wag-lock{overflow:hidden}";
+  document.head.appendChild(css);
+
+  var box = document.createElement("div");
+  box.id = "wag";
+  box.innerHTML =
+    '<div class="c" role="dialog" aria-modal="true" aria-labelledby="wagT">' +
+    '<div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg></div>' +
+    '<h2 id="wagT">Ikuti saluran WhatsApp dulu</h2>' +
+    '<p>Untuk memakai Secretly, ikuti saluran kami. Buka saluran, tekan Ikuti, lalu kembali ke halaman ini dan tunggu <b>10 detik</b>.</p>' +
+    '<button id="wagGo" type="button">Buka saluran WhatsApp</button>' +
+    '<div class="st" id="wagSt"></div>' +
+    '<button id="wagOk" type="button" disabled style="margin-top:12px">Saya sudah ikuti</button>' +
+    '</div>';
+  document.body.appendChild(box);
+  document.body.classList.add("wag-lock");
+
+  var st = box.querySelector("#wagSt"), go = box.querySelector("#wagGo"), ok = box.querySelector("#wagOk");
+  var opened = false, left = WAIT, timer = null, awayAt = 0;
+
+  function say(t, good) { st.textContent = t; st.className = "st" + (good ? " ok" : ""); }
+  var bg = document.querySelectorAll("main,nav");
+  bg.forEach(function (n) { n.inert = true; });
+  function unlock() { ls.set(KEY, "1"); document.body.classList.remove("wag-lock"); bg.forEach(function (n) { n.inert = false; }); box.remove(); }
+
+  function tick() {
+    if (left > 0) { say("Belum terdeteksi. Tunggu " + left + " detik lagi..."); left--; return; }
+    clearInterval(timer); timer = null;
+    ok.disabled = false; say("Terdeteksi. Tekan tombol di bawah untuk masuk.", true);
+  }
+  function backFromWA() {
+    if (!opened || document.hidden) return;
+    // harus benar-benar meninggalkan halaman minimal 3 detik (membuka WhatsApp)
+    if (awayAt && Date.now() - awayAt < 3000) { say("Kamu kembali terlalu cepat. Buka saluran dan tekan Ikuti dulu."); opened = false; awayAt = 0; return; }
+    if (!timer && ok.disabled) { left = WAIT; tick(); timer = setInterval(tick, 1000); }
+  }
+
+  go.addEventListener("click", function () {
+    opened = true; awayAt = Date.now(); left = WAIT;
+    say("Tekan Ikuti di WhatsApp, lalu kembali ke sini. Setelah itu tunggu 10 detik.");
+    window.open(LINK, "_blank", "noopener");
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { if (opened && !awayAt) awayAt = Date.now(); } else backFromWA();
+  });
+  window.addEventListener("focus", backFromWA);
+  ok.addEventListener("click", function () {
+    if (!opened || ok.disabled) { say("Buka saluran dulu, lalu kembali ke sini."); return; }
+    unlock();
+  });
+})();
+
+</script>
+<script>
 /* ====== KONFIGURASI ======
    1) Supabase (Project Settings > API): isi SB_URL dan SB_KEY (anon / publishable key, BUKAN service_role)
    2) Bypass memakai function /api/bypass (file api/bypass.js), tidak perlu diubah. */
@@ -418,7 +495,7 @@ const API_UPLOAD = "https://tmpfiles.org/api/v1/upload";   // cadangan kalau Sup
 const SB_READY = /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(SB_URL) && !/ISI-/i.test(SB_URL) && SB_KEY.length > 30 && !/^ISI_/.test(SB_KEY);
 const MAX_MB = SB_READY ? 50 : 100;
 const sbH = x => { const o = {apikey: SB_KEY}; if(SB_KEY.startsWith("eyJ")) o.Authorization = "Bearer " + SB_KEY; return Object.assign(o, x || {}); };
-async function sbErr(r){ let m = ""; try{ const j = await r.json(); m = j.message || j.error || ""; }catch(e){} return new Error(m || ("HTTP " + r.status)); }
+async function sbErr(r){ let m = ""; try{ const j = await r.json(); m = j.message || j.error || ""; }catch(e){} m = m || ("HTTP " + r.status); if(/bucket|row-level|policy|relation|does not exist|schema cache|not found/i.test(m) || [401,403,404].includes(r.status)) m += " (jalankan supabase-setup.sql di Supabase > SQL Editor)"; return new Error(m); }
 async function sbUpload(blob, name){
   const ext = ((name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5)) || "bin";
   const path = Date.now() + "-" + Math.random().toString(36).slice(2, 9) + "." + ext;
@@ -434,7 +511,7 @@ const show = (id, txt, err, link) => {
   if (link && !err) {
     const r = document.createElement("div"); r.className = "row"; r.style.marginTop = "10px";
     r.innerHTML = '<button class="btn"><svg class="i"><use href="#copy"/></svg>Copy</button><a class="btn go" target="_blank" rel="noopener"><svg class="i"><use href="#open"/></svg>Buka</a>';
-    r.firstChild.onclick = () => { navigator.clipboard.writeText(txt); r.firstChild.lastChild.textContent = "Tersalin"; };
+    r.firstChild.onclick = async () => { let ok = false; try{ await navigator.clipboard.writeText(txt); ok = true; }catch(e){ const ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); try{ ok = document.execCommand("copy"); }catch(_){} ta.remove(); } r.firstChild.lastChild.textContent = ok ? "Tersalin" : "Gagal, salin manual"; };
     if (/^https?:\/\//.test(txt)) r.lastChild.href = txt; else r.lastChild.style.display = "none";
     o.appendChild(r);
   }
@@ -458,22 +535,26 @@ document.querySelectorAll("#tabs [data-t]").forEach(b => b.onclick = () => {
 async function paste(id){ try{ $(id).value = await navigator.clipboard.readText(); }catch(e){ $(id).focus(); } }
 
 /* Bypass Link / Bypass Web (memanggil /api/bypass) */
+function addLinks(out, links, title){
+  if(!links || !links.length) return;
+  const box = document.createElement("div"); box.style.marginTop = "12px";
+  const t = document.createElement("div"); t.style.opacity = ".7"; t.textContent = title; box.appendChild(t);
+  links.forEach(l => { const a = document.createElement("a"); a.href = l.url; a.target = "_blank"; a.rel = "noopener"; a.style.cssText = "display:block;color:#ffb3cf;margin-top:6px"; a.textContent = (l.text ? l.text + " - " : "") + l.url; box.appendChild(a); });
+  $(out).appendChild(box);
+}
 async function bypass(inp, out, mode){
   const u = $(inp).value.trim();
   if(!/^https?:\/\//i.test(u)) return show(out, "Masukkan tautan yang diawali http:// atau https://", true);
-  show(out, "Memproses... bisa sampai 10 detik");
+  show(out, "Memproses... bisa sampai 1 menit, jangan tutup halaman");
+  const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 70000);
   try{
-    const r = await fetch(API_BYPASS + encodeURIComponent(u) + (mode === "web" ? "&mode=web" : ""));
-    let j; try{ j = await r.json(); }catch(e){ throw new Error(r.status === 404 ? "file api/bypass.js belum ikut ter-deploy di Vercel" : "balasan server tidak valid (HTTP " + r.status + ")"); }
-    if(!j.ok) throw new Error(j.error || "Hasil kosong");
+    const r = await fetch(API_BYPASS + encodeURIComponent(u) + (mode === "web" ? "&mode=web" : ""), {signal: ac.signal});
+    let j; try{ j = await r.json(); }catch(e){ throw new Error(r.status === 404 ? "file api/bypass.js belum ikut ter-deploy di Vercel (harus ada di folder api/)" : r.status === 504 ? "waktu server habis, naikkan maxDuration di vercel.json" : "balasan server tidak valid (HTTP " + r.status + ")"); }
+    if(!j.ok){ show(out, "Bypass gagal: " + (j.error || "Hasil kosong"), true); addLinks(out, j.links, "Tautan yang mungkin tujuanmu:"); return; }
     show(out, j.result, false, true);
-    if(j.links && j.links.length){
-      const box = document.createElement("div"); box.style.marginTop = "12px";
-      const t = document.createElement("div"); t.style.opacity = ".7"; t.textContent = "Tautan lain di halaman:"; box.appendChild(t);
-      j.links.forEach(l => { const a = document.createElement("a"); a.href = l.url; a.target = "_blank"; a.rel = "noopener"; a.style.cssText = "display:block;color:#ffb3cf;margin-top:6px"; a.textContent = (l.text ? l.text + " - " : "") + l.url; box.appendChild(a); });
-      $(out).appendChild(box);
-    }
-  }catch(e){ show(out, "Bypass gagal: " + e.message, true); }
+    addLinks(out, j.links, "Tautan lain di halaman:");
+  }catch(e){ show(out, "Bypass gagal: " + (e.name === "AbortError" ? "waktu habis" : e.message), true); }
+  finally{ clearTimeout(tm); }
 }
 
 /* Obfuscate Lua (di browser). XOR murni aritmetika: jalan di Lua 5.1 / 5.3 / Luau */
@@ -628,8 +709,9 @@ async function sha(){ const v = $("h-in").value; if(!v) return show("h-out", "Is
   show("h-out", Array.from(new Uint8Array(h), b => b.toString(16).padStart(2, "0")).join(""), false, true); }
 
 /* Base64 dan URL */
+const bin = a => { let r = ""; for(let i = 0; i < a.length; i += 8192) r += String.fromCharCode.apply(null, a.subarray(i, i + 8192)); return r; };
 function b64(enc){ const v = $("x-in").value;
-  try{ show("x-out", enc ? btoa(String.fromCharCode(...new TextEncoder().encode(v))) : new TextDecoder().decode(Uint8Array.from(atob(v.trim()), c => c.charCodeAt(0))), false, true); }
+  try{ show("x-out", enc ? btoa(bin(new TextEncoder().encode(v))) : new TextDecoder().decode(Uint8Array.from(atob(v.trim().replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0))), false, true); }
   catch(e){ show("x-out", "Input tidak valid.", true); } }
 function urlc(enc){ const v = $("u-in").value;
   try{ show("u-out", enc ? encodeURIComponent(v) : decodeURIComponent(v), false, true); }
@@ -675,6 +757,11 @@ if(VID_OFF) applyVid(true);
 
 /* Update terbaru: edit daftar ini setiap kali ada pembaruan (yang terbaru paling atas) */
 const UPDATES = [
+  {v: "1.3", d: "17 Okt 2026", t: "Wajib ikut saluran dan perbaikan tools", i: [
+    "Sebelum memakai Secretly, pengunjung diminta mengikuti saluran WhatsApp kami",
+    "Bypass Link lebih tahan terhadap halaman perantara dan menampilkan tautan kandidat saat gagal",
+    "Tombol Copy kini berfungsi di semua browser, Base64 mendukung teks besar",
+    "Pesan error upload dan rating lebih jelas"]},
   {v: "1.2", d: "17 Okt 2026", t: "Menu baru, Rating, dan navigasi lebih besar", i: [
     "Menu titik tiga di kanan atas: akses cepat ke semua halaman dan fitur",
     "Fitur Rating dan ulasan: nilai Secretly dan baca ulasan pengunjung lain",
