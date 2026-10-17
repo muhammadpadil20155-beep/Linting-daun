@@ -6,7 +6,7 @@
 const dns = require("dns").promises;
 const net = require("net");
 
-const VERSION = "v7-captcha-aware";
+const VERSION = "v8-frame-captcha";
 const UA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
 const MAX_HOPS = 8;
 const MAX_BYTES = 2000000;
@@ -235,10 +235,11 @@ async function browserResolve(start, ms, state) {
     await page.goto(start, { waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {});
     while (!found && Date.now() < end) {
       await new Promise(r => setTimeout(r, 1500));
-      const cur = page.url();
+      const cur = page.url(); state.last = cur;
       if (cur && new URL(cur).hostname !== startHost && FILE_HOST.test(cur)) { found = cur; break; }
       let html = ""; try { html = await page.content(); } catch (e) { continue; }
-      if (CAPTCHA_RE.test(html) || /Attention Required/i.test(html)) {
+      const capFrame = page.frames().some(f => /challenges\.cloudflare\.com|recaptcha|hcaptcha|turnstile|bicocaptcha/i.test(f.url()));
+      if (CAPTCHA_RE.test(html) || capFrame || /Attention Required/i.test(html)) {
         cfSince = cfSince || Date.now();
         if (Date.now() - cfSince > 6000) throw Object.assign(new Error(CAPTCHA_MSG), { captcha: true });
       } else cfSince = 0;
