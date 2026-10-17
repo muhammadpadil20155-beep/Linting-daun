@@ -546,15 +546,25 @@ async function bypass(inp, out, mode){
   const u = $(inp).value.trim();
   if(!/^https?:\/\//i.test(u)) return show(out, "Masukkan tautan yang diawali http:// atau https://", true);
   show(out, "Memproses... bisa sampai 1 menit, jangan tutup halaman");
-  const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 70000);
   try{
-    const r = await fetch(API_BYPASS + encodeURIComponent(u) + (mode === "web" ? "&mode=web" : ""), {signal: ac.signal});
-    let j; try{ j = await r.json(); }catch(e){ throw new Error(r.status === 404 ? "file api/bypass.js belum ikut ter-deploy di Vercel (harus ada di folder api/)" : r.status === 504 ? "waktu server habis, naikkan maxDuration di vercel.json" : "balasan server tidak valid (HTTP " + r.status + ")"); }
-    if(!j.ok){ show(out, "Bypass gagal: " + (j.error || "Hasil kosong"), true); addLinks(out, j.links, "Tautan yang mungkin tujuanmu:"); return; }
+    let j, r, tries = 0;
+    for(;;){
+      tries++;
+      const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 70000);
+      try{
+        r = await fetch(API_BYPASS + encodeURIComponent(u) + (mode === "web" ? "&mode=web" : ""), {signal: ac.signal});
+        j = await r.json().catch(() => null);
+      }catch(e){ j = {ok: false, retryable: true, error: e.name === "AbortError" ? "waktu habis" : e.message}; }
+      finally{ clearTimeout(tm); }
+      if(!j || j.ok || !j.retryable || tries >= 2) break;
+      show(out, "Gagal (" + j.error + "). Mencoba lagi otomatis, percobaan 2 dari 2...");
+      await new Promise(x => setTimeout(x, 1500));
+    }
+    if(!j){ throw new Error(r.status === 404 ? "file api/bypass.js belum ikut ter-deploy di Vercel (harus ada di folder api/)" : r.status === 504 ? "waktu server habis, naikkan maxDuration di vercel.json" : "balasan server tidak valid (HTTP " + r.status + ")"); }
+    if(!j.ok){ show(out, (j.captcha ? "Perlu verifikasi manual: " : "Bypass gagal: ") + (j.error || "Hasil kosong"), true); if(j.captcha) addLinks(out, [{url: u, text: "Buka tautan asli di browser"}], "Selesaikan verifikasinya sendiri:"); addLinks(out, j.links, "Tautan yang mungkin tujuanmu:"); return; }
     show(out, j.result, false, true);
     addLinks(out, j.links, "Tautan lain di halaman:");
   }catch(e){ show(out, "Bypass gagal: " + (e.name === "AbortError" ? "waktu habis" : e.message), true); }
-  finally{ clearTimeout(tm); }
 }
 
 /* Obfuscate Lua (di browser). XOR murni aritmetika: jalan di Lua 5.1 / 5.3 / Luau */
@@ -760,6 +770,7 @@ const UPDATES = [
   {v: "1.3", d: "17 Okt 2026", t: "Wajib ikut saluran dan perbaikan tools", i: [
     "Sebelum memakai Secretly, pengunjung diminta mengikuti saluran WhatsApp kami",
     "Bypass Link lebih tahan terhadap halaman perantara dan menampilkan tautan kandidat saat gagal",
+    "Bypass mengenali halaman captcha dan berhenti lebih cepat, serta otomatis mengulang sekali jika error jaringan atau waktu habis",
     "Tombol Copy kini berfungsi di semua browser, Base64 mendukung teks besar",
     "Pesan error upload dan rating lebih jelas"]},
   {v: "1.2", d: "17 Okt 2026", t: "Menu baru, Rating, dan navigasi lebih besar", i: [
