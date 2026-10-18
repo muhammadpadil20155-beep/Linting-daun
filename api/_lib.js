@@ -1,6 +1,6 @@
 // api/_lib.js — helper bersama (awalan _ = bukan endpoint). Token HANYA dibaca dari Environment Variables Vercel.
 const crypto = require("crypto");
-const GH = process.env.GITHUB_TOKEN, OWNER = process.env.GITHUB_OWNER, VT = process.env.VERCEL_TOKEN, TEAM = process.env.VERCEL_TEAM_ID;
+const GH = process.env.GITHUB_TOKEN, OWNER = process.env.GITHUB_OWNER, VT = process.env.VC_TOKEN, TEAM = process.env.VC_TEAM_ID;
 const LOG_REPO = process.env.LOG_REPO || (OWNER + "/secretly-logs"), LOG_BRANCH = process.env.LOG_BRANCH || "";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 

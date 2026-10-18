@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
   const t0 = Date.now(), ip = L.ipHash(req); let name = "", repoMade = false, projMade = false;
   try {
     if (process.env.DEPLOY_ENABLED === "0") return send(res, 503, { ok: false, error: "Fitur deploy sedang dimatikan oleh owner" });
-    if (!L.GH || !L.OWNER || !L.VT) return send(res, 500, { ok: false, error: "Server belum dikonfigurasi (GITHUB_TOKEN, GITHUB_OWNER, VERCEL_TOKEN)" });
+    if (!L.GH || !L.OWNER || !L.VT) return send(res, 500, { ok: false, error: "Server belum dikonfigurasi (GITHUB_TOKEN, GITHUB_OWNER, VC_TOKEN)" });
     if (req.method === "GET") { const n = normName(new URL(req.url, "http://x").searchParams.get("name")); return send(res, 200, { ...(await nameState(n)), name: n }); }
     if (req.method !== "POST") return send(res, 405, { ok: false, error: "Metode tidak didukung" });
 
